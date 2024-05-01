@@ -19,20 +19,26 @@ function CourseList({ courses, onApprove, onReject, onStudentApprove, onStudentR
           </tr>
         </thead>
         <tbody>
-          {courses.map((course) => (
-            <tr key={course.id}>
-              <td>{course.code}</td>
-              <td>{course.name}</td>
-              <td>{course.students?.length || 0}</td>
-              <td>
-                <button className="approve-btn" onClick={() => onApprove(course.id)}>Approve</button>
-                <button className="reject-btn" onClick={() => onReject(course.id)}>Reject</button>
-              </td>
-              <td>
-                <button className="view-details-btn" onClick={() => setSelectedCourse(course.id)}>View Students</button>
-              </td>
-            </tr>
-          ))}
+        {courses.map((course) => (
+  <tr key={course.code}>
+    <td>{course.code}</td>
+    <td>{course.name}</td>
+    <td>{course.students?.length || 0}</td>
+    <td>
+      {course.approved ? (
+        <span>Approved!</span>
+      ) : (
+        <>
+          <button className="approve-btn" onClick={() => onApprove(course.code)}>Approve</button>
+          <button className="reject-btn" onClick={() => onReject(course.code)}>Reject</button>
+        </>
+      )}
+    </td>
+    <td>
+      <button className="view-details-btn" onClick={() => setSelectedCourse(course.id)}>View Students</button>
+    </td>
+  </tr>
+))}
         </tbody>
       </table>
 

@@ -1,83 +1,72 @@
 const express = require('express');
+const { MongoClient } = require('mongodb');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
-
-// Body parser middleware to handle request bodies
 app.use(express.json());
 
-// Mock data for demonstration with students added
-let courses = [
-  { 
-    id: 1, 
-    code: '20CS3CSJP', 
-    name: 'Introduction to Java Programming', 
-    approved: false,
-    students: [
-      { id: 1, usn: '1BM20CS112', name: 'Prathvi Puthran', approved: false },
-      { id: 2, usn: '1BM20CS161', name: 'Spoorthi Udupa', approved: false },
-    ]
-  },
-  { 
-    id: 2, 
-    code: '20CS3CSDS', 
-    name: 'Data Science', 
-    approved: false,
-    students: [
-      { id: 1, usn: '1BM20CS141', name: 'Samhitha D', approved: false },
-      { id: 2, usn: '1BM20CS160', name: 'Siri Prahlad', approved: false },
-    ]
-  },
-  // Add more courses as needed
-];
+// MongoDB connection string
+const uri = "mongodb+srv://samhithacs20:mJVwbRopy9BgLuGr@cluster0.yyqir99.mongodb.net/?retryWrites=true&w=majority";
 
-app.get('/', (req, res) => {
-    res.send('Express Server is running');
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
 });
 
+// Database name
+const dbName = 'new_db';
+let db;
+let coursesCollection;
+
+async function connectToMongo() {
+  try {
+    await client.connect();
+    console.log('Connected to MongoDB');
+    db = client.db(dbName);
+    coursesCollection = db.collection('new_collection');
+  } catch (error) {
+    console.error('Could not connect to MongoDB', error);
+  }
+}
+
+connectToMongo();
+
 // Endpoint to get the list of courses
-app.get('/api/courses', (req, res) => {
+app.get('/api/courses', async (req, res) => {
+  const courses = await coursesCollection.find({}).toArray();
   res.json(courses);
 });
 
 // Endpoint to approve a course
-app.post('/api/courses/approve/:id', (req, res) => {
-  const { id } = req.params;
-  courses = courses.map(course => course.id === parseInt(id) ? { ...course, approved: true } : course);
-  res.json({ message: `Course with ID ${id} approved` });
+// Endpoint to approve a course
+app.post('/api/courses/approve/:code', async (req, res) => {
+  const { code } = req.params;
+  const result = await coursesCollection.updateOne({ code: code }, { $set: { approved: true } });
+  if (result.modifiedCount === 1) {
+    res.json({ message: `Course with code ${code} approved`, approved: true });
+  } else {
+    res.status(404).json({ message: "Course not found or already approved" });
+  }
 });
+
 
 // Endpoint to reject a course
-app.post('/api/courses/reject/:id', (req, res) => {
-  const { id } = req.params;
-  courses = courses.map(course => course.id === parseInt(id) ? { ...course, approved: false } : course);
-  res.json({ message: `Course with ID ${id} rejected` });
+app.post('/api/courses/reject/:code', async (req, res) => {
+  const { code } = req.params;
+  try {
+    const result = await coursesCollection.deleteOne({ code: code });
+    console.log("Delete operation result:", result);
+    if (result.deletedCount === 0) {
+      res.status(404).json({ message: `No course found with code ${code}` });
+    } else {
+      res.json({ message: `Course with code ${code} rejected`, result: result });
+    }
+  } catch (error) {
+    console.error('Error rejecting course:', error);
+    res.status(500).json({ message: 'Failed to reject course' });
+  }
 });
 
-// Endpoint to approve a student in a course
-app.post('/api/courses/:courseId/approve/student/:studentId', (req, res) => {
-  const { courseId, studentId } = req.params;
-  courses = courses.map(course => {
-    if (course.id === parseInt(courseId)) {
-      course.students = course.students.map(student => 
-        student.id === parseInt(studentId) ? { ...student, approved: true } : student);
-    }
-    return course;
-  });
-  res.json({ message: `Student with ID ${studentId} in course ID ${courseId} approved` });
-});
-
-// Endpoint to reject a student in a course
-app.post('/api/courses/:courseId/reject/student/:studentId', (req, res) => {
-  const { courseId, studentId } = req.params;
-  courses = courses.map(course => {
-    if (course.id === parseInt(courseId)) {
-      course.students = course.students.map(student => 
-        student.id === parseInt(studentId) ? { ...student, approved: false } : student);
-    }
-    return course;
-  });
-  res.json({ message: `Student with ID ${studentId} in course ID ${courseId} rejected` });
-});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
