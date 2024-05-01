@@ -7,11 +7,27 @@ function StudentLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
+    const [successMessage, setSuccessMessage] = useState('');
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         console.log('Logging in:', email, password);
-        // If login is successful:
-        navigate('/student-page');  // Correct usage of navigate
+        try {
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                navigate('/student-page');
+            } else {
+                setSuccessMessage("Wrong credentials");
+            }
+        } catch (error) {
+            console.error('Error during login:', error);
+        }
     };
 
     return (
@@ -31,9 +47,16 @@ function StudentLogin() {
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Password"
             />
+            <div>{successMessage && (
+        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+          <p>{successMessage}</p>
+        </div>)}</div>
             <button className="student-login-button" onClick={handleLogin}>Login</button>
+            
         </div>
+        
+        
     );
-}    
+}
 
 export default StudentLogin;
