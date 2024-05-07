@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Header from './Header';
 import Footer from './Footer';
@@ -22,7 +22,6 @@ function AppWrapper() {
 
 function App() {
   const [courses, setCourses] = useState([]);
-  const location = useLocation(); // Gets the current location
 
   useEffect(() => {
     fetch('/api/courses')
@@ -36,7 +35,7 @@ function App() {
       .then(response => response.json())
       .then(data => {
         setCourses(courses.map(course => 
-          course.code === courseCode ? { ...course, approved: true } : course
+          course.courseCode === courseCode ? { ...course, approved: true } : course
         ));
       })
       .catch(error => console.error('Error approving course:', error));
@@ -46,52 +45,14 @@ function App() {
     fetch(`/api/courses/reject/${courseCode}`, { method: 'POST' })
       .then(response => response.json())
       .then(data => {
-        setCourses(prevCourses => prevCourses.filter(course => course.code !== courseCode));
+        setCourses(prevCourses => prevCourses.filter(course => course.courseCode !== courseCode));
       })
       .catch(error => console.error('Error rejecting course:', error));
   };
 
-  const handleStudentApprove = (courseId, studentId) => {
-    fetch(`/api/courses/${courseId}/approve/student/${studentId}`, { method: 'POST' })
-      .then(() => {
-        setCourses(courses.map(course => {
-          if (course.id === courseId) {
-            return {
-              ...course,
-              students: course.students.map(student => 
-                student.id === studentId ? { ...student, approved: true } : student
-              )
-            };
-          }
-          return course;
-        }));
-      })
-      .catch(error => console.error('Error approving student:', error));
-  };
-
-  const handleStudentReject = (courseId, studentId) => {
-    fetch(`/api/courses/${courseId}/reject/student/${studentId}`, { method: 'POST' })
-      .then(() => {
-        setCourses(courses.map(course => {
-          if (course.id === courseId) {
-            return {
-              ...course,
-              students: course.students.map(student => 
-                student.id === studentId ? { ...student, approved: false } : student
-              )
-            };
-          }
-          return course;
-        }));
-      })
-      .catch(error => console.error('Error rejecting student:', error));
-  };
-
-  const isLoginRoute = location.pathname === '/login' || location.pathname === '/dean-login' || location.pathname === '/student-login' || location.pathname === '/faculty-login';
-
   return (
     <>
-      {isLoginRoute ? <Header /> : <Header />}
+      <Header />
       <Routes>
         <Route path="/" element={<Navigate replace to="/login" />} />
         <Route path="/login" element={<LoginPage />} />
@@ -104,8 +65,6 @@ function App() {
               courses={courses}
               onApprove={handleApprove}
               onReject={handleReject}
-              onStudentApprove={handleStudentApprove}
-              onStudentReject={handleStudentReject}
             />
           </main>
         } />
