@@ -32,7 +32,7 @@ function FacultyLogin() {
 
     return (
         <div className="faculty-login-container">
-            <h1 className="faculty-login-title">Faculty Login</h1>
+            <h1 className="faculty-login-title">Department Login</h1>
             <input 
                 type="email" 
                 className="faculty-login-input"

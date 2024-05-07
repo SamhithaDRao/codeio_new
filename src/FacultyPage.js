@@ -42,7 +42,7 @@ function RegistrationForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Faculty Registration For New Course</h2>
+      <h2>Department Registration For New Course</h2>
       <div>
         <label>Course Code</label>
         <input

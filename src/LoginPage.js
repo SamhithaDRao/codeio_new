@@ -23,7 +23,7 @@ function LoginPage() {
             <h1 className="login-title">Login As</h1>
             <button className="login-button" onClick={() => handleLoginClick('dean')}>Dean</button>
             <button className="login-button" onClick={() => handleLoginClick('student')}>Student</button>
-            <button className="login-button" onClick={() => handleLoginClick('faculty')}>Faculty</button>
+            <button className="login-button" onClick={() => handleLoginClick('faculty')}>Department</button>
         </div>
     );
     
