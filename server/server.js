@@ -1,5 +1,6 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
+const { ObjectId } = require('mongodb');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -136,26 +137,62 @@ app.post('/login-faculty', async (req, res) => {
 
 // Endpoint to register a new course
 app.post('/api/courses/register', async (req, res) => {
-  const { open_elective, faculty, department } = req.body;
+  const { open_elective, faculty, department,  courseCode,} = req.body;
   
   try {
     const newCourse = {
       open_elective,
       faculty,
       department,
+      courseCode,
        // Assuming courses need approval; set default as false.
     };
 
-    const result= await courseCollection.insertOne(newCourse);
-    console.log("Hi")
-    res.status(201).json({ message: "Course registered successfully", data: result.ops[0] });
+    const result = await courseCollection.insertOne(newCourse);
+    if (result.acknowledged) {
+      res.status(201).json({
+        message: "Course registered successfully",
+        data: {
+          _id: result.insertedId,
+          ...newCourse
+        }
+      });
+    } else {
+      res.status(400).json({ message: "Course registration failed" });
+    }
   } catch (error) {
     console.error('Failed to register course:', error);
-    res.status(500).json({ message: 'Failed to register course', error: error });
+    res.status(500).json({ message: 'Failed to register course', error: error.toString() });
+  }
+});
+
+// Endpoint to increment total students for a course
+app.post('/api/courses/:courseCode/increment-total-students', async (req, res) => {
+  const courseCode = req.params.courseCode;
+
+  try {
+    // Find the course by courseCode instead of _id
+    const course = await courseCollection.findOne({ courseCode: courseCode });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found." });
+    }
+
+    // Increment total-students by 1, using courseCode for the query
+    const updatedCourse = await courseCollection.updateOne(
+      { courseCode: courseCode },
+      { $inc: { "total-students": 1 } } // Increment total-students by 1
+    );
+
+    res.json({ message: "Total students incremented successfully.", course: updatedCourse });
+  } catch (error) {
+    console.error('Error incrementing total students:', error);
+    res.status(500).json({ message: 'Failed to increment total students' });
   }
 });
 
 
+
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
+

@@ -4,16 +4,15 @@ function StudentPage() {
   const [openElectives, setOpenElectives] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [totalStudents, setTotalStudents] = useState(0);
 
   useEffect(() => {
     const fetchOpenElectives = async () => {
       try {
         const response = await fetch('/api/courses/open-electives');
         const data = await response.json();
-        console.log("data");
         if (response.ok) {
           setOpenElectives(data);
-          console.log(openElectives);
         } else {
           throw new Error(data.message || "Failed to fetch data.");
         }
@@ -25,17 +24,53 @@ function StudentPage() {
     fetchOpenElectives();
   }, []);
 
+  useEffect(() => {
+    // Calculate total students
+    if (selectedCourse) {
+      const fetchTotalStudents = async () => {
+        try {
+          const response = await fetch(`/api/courses/${selectedCourse._id}/total-students`);
+          const data = await response.json();
+          if (response.ok) {
+            setTotalStudents(data.total);
+          } else {
+            throw new Error(data.message || "Failed to fetch total students.");
+          }
+        } catch (error) {
+          console.error('Fetch error:', error);
+        }
+      };
+
+      fetchTotalStudents();
+    }
+  }, [selectedCourse]);
+
   const handleSelectCourse = (course) => {
     setSelectedCourse(course);
   };
 
   const handleSubmit = () => {
     if (selectedCourse) {
-      setSuccessMessage(`Successfully selected: ${selectedCourse.open_elective}`);
+      const currentTime = new Date().toLocaleString();
+      setSuccessMessage(`Successfully selected: ${selectedCourse.open_elective} at ${currentTime}`);
+  
+      // Update total-students for the selected course
+      fetch(`/api/courses/${selectedCourse.courseCode}/increment-total-students`, {
+        method: 'POST',
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to increment total students.');
+          }
+          // Increment totalStudents state by 1
+          // setTotalStudents(prevTotalStudents => prevTotalStudents + 1);
+        })
+        .catch(error => console.error('Error incrementing total students:', error));
     } else {
       setSuccessMessage('Please select a course first.');
     }
   };
+
 
   return (
     <div className="open-electives-container">
@@ -44,6 +79,7 @@ function StudentPage() {
         <thead>
           <tr>
             <th>Open Elective</th>
+            <th>Course Code</th>
             <th>Department</th>
             <th>Faculty</th>
             <th>Select</th>
@@ -53,6 +89,7 @@ function StudentPage() {
           {openElectives.map(elective => (
             <tr key={elective._id}>
               <td style={{ padding: '10px', border: '1px solid #ddd' }}>{elective.open_elective}</td>
+              <td style={{ padding: '10px', border: '1px solid #ddd' }}>{elective.courseCode}</td>
               <td style={{ padding: '10px', border: '1px solid #ddd' }}>{elective.department}</td>
               <td style={{ padding: '10px', border: '1px solid #ddd' }}>{elective.faculty}</td>
               <td style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'center' }}>
@@ -60,6 +97,7 @@ function StudentPage() {
                   type="radio"
                   name="selectedElective"
                   onClick={() => handleSelectCourse(elective)}
+                  disabled={totalStudents >= 60 || elective.totalStudents >= 60} // Disable if total students is >= 60
                 />
               </td>
             </tr>
@@ -67,16 +105,17 @@ function StudentPage() {
         </tbody>
       </table>
       <div style={{ textAlign: 'center', marginTop: '20px' }}>
-        <button
-          onClick={handleSubmit}
+        <button 
+          onClick={handleSubmit} 
+          disabled={!selectedCourse || totalStudents >= 60} 
           style={{
             padding: '10px 20px',
             fontSize: '16px',
-            backgroundColor: 'blue',
+            backgroundColor: totalStudents >= 60 ? 'gray' : 'blue',
             color: 'white',
             border: 'none',
             borderRadius: '5px',
-            cursor: 'pointer',
+            cursor: 'pointer'
           }}
         >
           Submit
